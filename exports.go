@@ -44,20 +44,46 @@ func (module *Module) NewClient(call goja.ConstructorCall) *goja.Object {
 	return runTime.ToValue(client).ToObject(runTime)
 }
 
-// Premine provides the initial accounts funding with the coins
-func (module *Module) Premine(number int) *goja.Object {
+// Premine provides the initial accounts funding
+//
+// The number of funded accounts is equal to the number of VUs
+func (module *Module) Premine() *goja.Object {
 	runTime := module.vu.Runtime()
 
-	fmt.Println("Mining...")
+	var accounts []struct {
+		PrivateKey string
+		Address    string
+	}
 
-	for i := range 5 {
-		fmt.Println("-mining ", i+1)
+	fmt.Println("Pre-mining...")
+
+	for i := range module.vu.State().Options.VUs.Int64 {
+		fmt.Println("- pre-mining", i+1)
+
+		wallet, err := wallet.GenerateKey()
+		if err != nil {
+			log.Fatal("Couldn't create new wallet")
+		}
+
+		privateKey, err := wallet.MarshallPrivateKey()
+		if err != nil {
+			log.Fatal("Couldn't serialize private key")
+		}
+
+		account := struct {
+			PrivateKey string
+			Address    string
+		}{
+			hex.EncodeToString(privateKey),
+			wallet.Address().String(),
+		}
+
+		accounts = append(accounts, account)
+
 		time.Sleep(1 * time.Second)
 	}
 
 	fmt.Println("Done!")
-
-	accounts := []struct{}{}
 
 	return runTime.ToValue(accounts).ToObject(runTime)
 }
