@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"time"
+	"math/big"
 
 	"xk6-eth/client"
 
 	"github.com/dop251/goja"
+	"github.com/umbracle/ethgo"
 	"github.com/umbracle/ethgo/jsonrpc"
 	"github.com/umbracle/ethgo/wallet"
 )
@@ -55,6 +56,28 @@ func (module *Module) Premine() *goja.Object {
 		Address    string
 	}
 
+	premineTxs := make(map[string]bool)
+
+	rpcClient, err := jsonrpc.NewClient("http://localhost:10002")
+	if err != nil {
+		log.Fatal("Couldn't create new RPC client")
+	}
+
+	chainId, err := rpcClient.Eth().ChainID()
+	if err != nil {
+		log.Fatal("Couldn't get chain id")
+	}
+
+	gasPrice, err := rpcClient.Eth().GasPrice()
+	if err != nil {
+		log.Fatal("Couldn't get current gas price")
+	}
+
+	nonce, err := rpcClient.Eth().GetNonce(client.DefaultWallet.Address(), ethgo.Pending)
+	if err != nil {
+		log.Fatal("Couldn't get nonce")
+	}
+
 	fmt.Println("Pre-mining...")
 
 	for i := range module.vu.State().Options.VUs.Int64 {
@@ -78,12 +101,32 @@ func (module *Module) Premine() *goja.Object {
 			wallet.Address().String(),
 		}
 
-		accounts = append(accounts, account)
+		to := wallet.Address()
+		value, _ := big.NewInt(0).SetString("5000000000000000000", 10)
 
-		time.Sleep(1 * time.Second)
+		txHash, err := client.SendRawTransaction(rpcClient, client.DefaultWallet, ethgo.Transaction{
+			From:     client.DefaultWallet.Address(),
+			To:       &to,
+			Value:    value,
+			GasPrice: gasPrice,
+			Nonce:    nonce,
+			ChainID:  chainId,
+		})
+
+		if err != nil {
+			log.Fatal("Couldn't send pre-mining transaction")
+		}
+
+		fmt.Println("Pre-mining transaction (" + txHash + ") was successfully sent")
+
+		premineTxs[txHash] = false
+
+		nonce++
+
+		accounts = append(accounts, account)
 	}
 
-	fmt.Println("Done!")
+	fmt.Println("Pre-mining done!")
 
 	return runTime.ToValue(accounts).ToObject(runTime)
 }
