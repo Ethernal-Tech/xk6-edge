@@ -76,6 +76,7 @@ func (module *Module) Premine() *goja.Object {
 	if err != nil {
 		log.Fatal("Couldn't create new RPC client")
 	}
+	defer rpcClient.Close()
 
 	chainId, err := rpcClient.Eth().ChainID()
 	if err != nil {
