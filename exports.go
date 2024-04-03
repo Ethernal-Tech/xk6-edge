@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strconv"
 
 	"xk6-eth/client"
 
@@ -126,7 +127,41 @@ func (module *Module) Premine() *goja.Object {
 		accounts = append(accounts, account)
 	}
 
+	fmt.Println("Waiting for the confirmation of the pre-mining transactions...")
+
+	confirmation(rpcClient, premineTxs)
+
 	fmt.Println("Pre-mining done!")
 
 	return runTime.ToValue(accounts).ToObject(runTime)
+}
+
+func confirmation(rc *jsonrpc.Client, premineTxs map[string]bool) {
+	for {
+		done := true
+
+		for txHash, mined := range premineTxs {
+			if mined {
+				continue
+			}
+
+			receipt, err := rc.Eth().GetTransactionReceipt(ethgo.HexToHash(txHash))
+			if err != nil {
+				log.Fatal("Couldn't get receipt for the pre-mining transaction")
+			}
+
+			if receipt == nil {
+				done = false
+				continue
+			}
+
+			fmt.Println("Transaction (" + txHash + ") confirmed in the block " + strconv.FormatUint(receipt.BlockNumber, 10))
+
+			premineTxs[txHash] = true
+		}
+
+		if done {
+			break
+		}
+	}
 }
