@@ -124,3 +124,13 @@ func EstimateGas(rc *jsonrpc.Client, w *wallet.Key, tx ethgo.Transaction) (uint6
 func (client *Client) EstimateGas(tx Transaction) (uint64, error) {
 	return 0, nil
 }
+
+func (client *Client) GasPrice() uint64 {
+	gasPrice, err := client.Client.Eth().GasPrice()
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+
+	return gasPrice
+}

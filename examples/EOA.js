@@ -20,7 +20,7 @@ export default function (data) {
     const tx = {
         to: "0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF",
         value: 100,
-        gas_price: 100,
+        gas_price: client.gasPrice() * 1.2,
     };
 
     client.sendRawTransaction(tx)
