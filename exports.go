@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"strconv"
+	"time"
 
 	"xk6-eth/client"
 
@@ -163,5 +164,7 @@ func confirmation(rc *jsonrpc.Client, premineTxs map[string]bool) {
 		if done {
 			break
 		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
 }
