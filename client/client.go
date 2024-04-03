@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/hex"
 	"log"
+	"math/big"
 	"xk6-eth/testmetrics"
 
 	"github.com/umbracle/ethgo"
@@ -50,6 +51,8 @@ type Client struct {
 	VU      modules.VU
 	Metrics testmetrics.Metrics
 	Wallet  *wallet.Key
+	Nonce   uint64
+	ChainId *big.Int
 }
 
 func SendRawTransaction(rc *jsonrpc.Client, w *wallet.Key, tx ethgo.Transaction) (string, error) {

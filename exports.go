@@ -20,7 +20,7 @@ import (
 func (module *Module) NewClient(call goja.ConstructorCall) *goja.Object {
 	runTime := module.vu.Runtime()
 
-	privateKey, err := hex.DecodeString(client.DefaultPrivateKey)
+	privateKey, err := hex.DecodeString(call.Arguments[0].String())
 	if err != nil {
 		log.Fatal("Couldn't decode private key")
 	}
@@ -35,14 +35,26 @@ func (module *Module) NewClient(call goja.ConstructorCall) *goja.Object {
 		log.Fatal("Couldn't create new RPC client")
 	}
 
+	nonce, err := rpcClient.Eth().GetNonce(wallet.Address(), ethgo.Pending)
+	if err != nil {
+		log.Fatal("Couldn't get nonce")
+	}
+
+	chainId, err := rpcClient.Eth().ChainID()
+	if err != nil {
+		log.Fatal("Couldn't get chain id")
+	}
+
 	client := &client.Client{
 		Client:  rpcClient,
 		VU:      module.vu,
 		Metrics: module.metrics,
 		Wallet:  wallet,
+		Nonce:   nonce,
+		ChainId: chainId,
 	}
 
-	fmt.Println("New client successfully created!")
+	fmt.Println("New client (" + wallet.Address().String() + ") successfully created!")
 
 	return runTime.ToValue(client).ToObject(runTime)
 }
