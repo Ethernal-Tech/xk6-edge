@@ -80,8 +80,28 @@ func SendRawTransaction(rc *jsonrpc.Client, w *wallet.Key, tx ethgo.Transaction)
 	return txHash.String(), err
 }
 
-func (client *Client) SendRawTransaction(tx Transaction) (string, error) {
-	return "", nil
+func (client *Client) SendRawTransaction(tx Transaction) string {
+	to := ethgo.HexToAddress(tx.To)
+
+	ethgoTx := ethgo.Transaction{
+		From:     client.Wallet.Address(),
+		To:       &to,
+		Input:    tx.Input,
+		GasPrice: tx.GasPrice,
+		Value:    big.NewInt(tx.Value),
+		ChainID:  client.ChainId,
+		Nonce:    client.Nonce,
+	}
+
+	txHash, err := SendRawTransaction(client.Client, client.Wallet, ethgoTx)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	client.Nonce++
+
+	return txHash
 }
 
 func EstimateGas(rc *jsonrpc.Client, w *wallet.Key, tx ethgo.Transaction) (uint64, error) {

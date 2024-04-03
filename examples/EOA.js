@@ -2,8 +2,8 @@ import eth from 'k6/x/ethereum';
 import exec from 'k6/execution';
 
 export const options = {
-    iterations: 10,
-    VUS: 10,
+    duration: '1m',
+    VUS: 2,
 };
 
 export function setup() {
@@ -16,4 +16,12 @@ export default function (data) {
     if (client == null) {
         client = new eth.Client(data[exec.vu.idInTest - 1].PrivateKey)
     }
+
+    const tx = {
+        to: "0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF",
+        value: 100,
+        gas_price: 100,
+    };
+
+    client.sendRawTransaction(tx)
 }
