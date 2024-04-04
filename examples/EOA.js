@@ -2,8 +2,16 @@ import eth from 'k6/x/ethereum';
 import exec from 'k6/execution';
 
 export const options = {
-    duration: '1m',
-    VUS: 1,
+    vus: 5,
+    scenarios: {
+        constant_request_rate: {
+            executor: 'constant-arrival-rate',
+            duration: '1m',
+            preAllocatedVUs: 5,
+            rate: 300,
+            timeUnit: '1s'
+        }
+    }
 };
 
 export function setup() {
