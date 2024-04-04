@@ -3,7 +3,7 @@ import exec from 'k6/execution';
 
 export const options = {
     duration: '1m',
-    VUS: 2,
+    VUS: 3,
 };
 
 export function setup() {

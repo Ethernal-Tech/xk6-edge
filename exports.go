@@ -56,6 +56,8 @@ func (module *Module) NewClient(call goja.ConstructorCall) *goja.Object {
 
 	fmt.Println("New client (" + wallet.Address().String() + ") successfully created!")
 
+	selection(int(module.vu.State().VUIDGlobal))
+
 	return runTime.ToValue(client).ToObject(runTime)
 }
 
