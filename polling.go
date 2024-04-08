@@ -4,10 +4,10 @@ import (
 	"log"
 	"sync"
 	"time"
-	"xk6-eth/testmetrics"
+	"xk6-eth/client"
 
 	"github.com/umbracle/ethgo"
-	"github.com/umbracle/ethgo/jsonrpc"
+	"go.k6.io/k6/metrics"
 )
 
 var (
@@ -15,37 +15,37 @@ var (
 	once     sync.Once
 )
 
-func selection(VUID int, rpcClient *jsonrpc.Client, metrics testmetrics.Metrics) {
+func selection(client *client.Client) {
 	once.Do(func() {
-		selected = VUID
+		selected = int(client.VU.State().VUID)
 	})
 
-	if selected != VUID {
+	if selected != int(client.VU.State().VUID) {
 		return
 	}
 
-	go polling(rpcClient, metrics)
+	go polling(client)
 }
 
-func polling(rpcClient *jsonrpc.Client, metrics testmetrics.Metrics) {
-	previousBlockNumber, err := rpcClient.Eth().BlockNumber()
+func polling(client *client.Client) {
+	previousBlockNumber, err := client.Client.Eth().BlockNumber()
 	if err != nil {
 		log.Fatal("Couldn't get block number")
 	}
 
-	previousBlock, err := rpcClient.Eth().GetBlockByNumber(ethgo.BlockNumber(previousBlockNumber), false)
+	previousBlock, err := client.Client.Eth().GetBlockByNumber(ethgo.BlockNumber(previousBlockNumber), false)
 	if err != nil {
 		log.Fatal("Couldn't get block")
 	}
 
 	for {
-		blockNumber, err := rpcClient.Eth().BlockNumber()
+		blockNumber, err := client.Client.Eth().BlockNumber()
 		if err != nil {
 			log.Fatal("Couldn't get block number")
 		}
 
 		if previousBlockNumber < blockNumber {
-			block, err := rpcClient.Eth().GetBlockByNumber(ethgo.BlockNumber(blockNumber), false)
+			block, err := client.Client.Eth().GetBlockByNumber(ethgo.BlockNumber(blockNumber), false)
 			if err != nil {
 				log.Fatal("Couldn't get block")
 			}
@@ -53,7 +53,24 @@ func polling(rpcClient *jsonrpc.Client, metrics testmetrics.Metrics) {
 			timestamp := block.Timestamp - previousBlock.Timestamp
 			TPS := float64(len(block.TransactionsHashes)) / float64(timestamp)
 
-			_ = TPS
+			metrics.PushIfNotDone(client.VU.Context(), client.VU.State().Samples, metrics.ConnectedSamples{
+				Samples: []metrics.Sample{
+					{
+						TimeSeries: metrics.TimeSeries{
+							Metric: client.Metrics.TPS,
+						},
+						Value: TPS,
+						Time:  time.Now(),
+					},
+					{
+						TimeSeries: metrics.TimeSeries{
+							Metric: client.Metrics.Block,
+						},
+						Value: 1,
+						Time:  time.Now(),
+					},
+				},
+			})
 
 			previousBlock, previousBlockNumber = block, blockNumber
 		}
